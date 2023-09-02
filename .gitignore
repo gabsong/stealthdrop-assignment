@@ -6,3 +6,6 @@ crs/
 circuits/target
 
 .env
+
+# Yarn
+.yarn
