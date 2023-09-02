@@ -7,6 +7,13 @@ import { resolve, dirname } from "path";
 
 import { ethers } from "ethers";
 
+/**
+ * Runs on:
+ * Node: v18.17.1
+ * npm: v9.8.1
+ * Yarn: v3.6.2
+ */
+
 // @ts-ignore -- no types
 import blake2 from 'blake2';
 

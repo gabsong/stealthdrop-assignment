@@ -11,11 +11,47 @@ fn main(
   polynomial_commitment: pub Field,
   nullifier: pub [u8; 32],
 ) {
-  // Write your main logic here
+  // #1. The validity of an ECDSA signature's origin from a particular public key
+  // https://github.com/colinnielsen/ecrecover-noir/tree/main
+  let key = ecrecover::secp256k1::PubKey::from_unified(pub_key);
+
+  // Combines verify_sig and to_eth_address, so we can verify the validity of the signature,
+  // and also obtain the eth address
+  let eth_address = key.ecrecover(signature, hashed_message);
+
+  // #2. The inclusion of the public key in the polynomial
+  // Verify that the public polynomial_commitment is in fact the hash of the polynomial
+  // Note: polynomial is already an array, insert directly as input to pedersen
+  assert(std::hash::pedersen(polynomial)[0] == polynomial_commitment);
+
+  // Check if eth_address is a root of the polynomial for eligibility
+  assert(evaluate_polynomial(polynomial, eth_address) == 0x);
+
+  // #3. The hash of the signature (also called nullifier) is derived from the signature, it helps in preventing double-claiming
+  // Verify that the public nullifier is in fact the hash of the signature
+  let sig_hash = std::hash::blake2s(signature);
+  assert(sig_hash == nullifier);
+
+  // Questions: 
+  // - Where in the repo do we prevent double claiming?
+  // - What else can I run other than the steps below?
+
+  // Results:
+  // - nargo check - OK
+  // - nargo test - OK
+  // - nargo prove circuits - OK, generates circuits/proofs/circuits.proof
+  // - nargo verify circuits - OK, no errors
 }
 
 fn evaluate_polynomial(polynomial: [Field; CANDIDATES + 1], x: Field) -> Field {
-  // Write logic to evaluate polynomial here
+  // input polynomial is an array of Fields, length is 3; means it's a 2nd degree
+  // the value of `x` that satisfies the polynomial should result in a zero sum
+  // i.e. A*x^2 + B*x^1 + C*x^0 = 0
+  let mut sum: Field = 0;
+  for i in 0..polynomial.len() {
+    sum += polynomial[i] * x.pow_32(i);
+  }
+  sum
 }
 
 #[test]
